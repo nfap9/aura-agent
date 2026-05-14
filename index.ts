@@ -7,6 +7,7 @@ dotenv.config();
 
 const API_KEY = process.env.API_KEY || "";
 const BASE_URL = process.env.BASE_URL || "";
+const MODEL_NAME = process.env.MODEL_NAME || "";
 
 /** 启动一个旋转 loading 动画，返回一个用于停止的函数 */
 function startLoading(text = "思考中"): () => void {
@@ -33,6 +34,7 @@ async function main() {
   const chat = new SimpleChat(
     API_KEY,
     BASE_URL,
+    MODEL_NAME,
     "你是一个智能助手，可以查询天气和计算",
     tools,
   );

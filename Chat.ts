@@ -6,14 +6,17 @@ export default class Chat {
   private messages: Message[] = [];
   private client: OpenAI;
   private tools: any[];
+  private modelName: string;
 
   constructor(
     apiKey: string,
     baseURL: string,
+    modelName: string,
     systemPrompt: string,
     tools: any,
   ) {
     this.client = new OpenAI({ apiKey, baseURL });
+    this.modelName = modelName;
     this.tools = tools;
     this.messages.push({
       role: "system",
@@ -47,7 +50,7 @@ export default class Chat {
 
     // 2. 发起第一次流式请求
     const stream = await this.client.chat.completions.create({
-      model: "mimo-v2.5-pro",
+      model: this.modelName,
       messages: this.messages as any,
       tools: this.tools,
       tool_choice: "auto",
@@ -133,7 +136,7 @@ export default class Chat {
 
       // 4.3 再次发起流式请求，获取工具执行后的最终回复
       const finalStream = await this.client.chat.completions.create({
-        model: "mimo-v2.5-pro",
+        model: this.modelName,
         messages: this.messages as any,
         tools: this.tools,
         stream: true,
