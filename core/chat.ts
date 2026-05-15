@@ -163,7 +163,7 @@ export default class Chat {
       iteration++;
       events?.onIterationStart?.(iteration, this.messages);
 
-      const apiMessages = this.buildMessagesWithSkills(userQuery);
+      const apiMessages = this.buildMessagesWithSkills(userQuery, events);
 
       const stream = this.provider.chatStream({
         model: this.modelName,
@@ -297,7 +297,10 @@ export default class Chat {
   /**
    * 构建发送给模型的消息列表，在原 system prompt 后动态插入匹配的 skill
    */
-  private buildMessagesWithSkills(userQuery: string): Message[] {
+  private buildMessagesWithSkills(
+    userQuery: string,
+    events?: ChatEvents,
+  ): Message[] {
     if (!this.skillRegistry || !userQuery) {
       return this.messages;
     }
@@ -306,6 +309,10 @@ export default class Chat {
     if (matched.length === 0) {
       return this.messages;
     }
+
+    events?.onSkillMatch?.(
+      matched.map((s) => ({ name: s.name, description: s.description })),
+    );
 
     const skillContent = matched
       .map(

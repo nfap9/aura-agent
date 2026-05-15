@@ -33,6 +33,12 @@ export interface ChatCompletionOptions {
   [key: string]: any;
 }
 
+/** Skill 匹配信息 */
+export interface MatchedSkill {
+  name: string;
+  description: string;
+}
+
 /** 生命周期事件回调 */
 export interface ChatEvents {
   onIterationStart?: (iteration: number, messages: Message[]) => void;
@@ -42,6 +48,7 @@ export interface ChatEvents {
   onToolCallStart?: (toolCall: ToolCall) => void;
   onToolCallEnd?: (toolCall: ToolCall, result: string) => void;
   onToolCallError?: (toolCall: ToolCall, error: Error) => void;
+  onSkillMatch?: (skills: MatchedSkill[]) => void;
 }
 
 /** 非流式调用返回结果 */

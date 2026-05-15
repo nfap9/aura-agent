@@ -1,6 +1,6 @@
 import type { IO } from "./io.ts";
 import type Chat from "../core/chat.ts";
-import type { ChatCompletionOptions } from "../core/types.ts";
+import type { ChatCompletionOptions, ChatEvents } from "../core/types.ts";
 
 export interface ChatLoopOptions {
   chat: Chat;
@@ -54,8 +54,25 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
     let isFirstChunk = true;
     let hasReasoning = false;
     let aiPrefixShown = false;
+    let toolCallPending = false;
 
-    for await (const chunk of chat.sendMessageStream(userInput, preset)) {
+    const events: ChatEvents = {
+      onSkillMatch: (skills) => {
+        io.showSkills(skills);
+      },
+      onToolCallStart: (toolCall) => {
+        const args = JSON.parse(toolCall.function.arguments) as Record<string, any>;
+        io.showToolCall(toolCall.function.name, args);
+      },
+      onToolCallEnd: (toolCall, result) => {
+        io.showToolResult(toolCall.function.name, result);
+      },
+      onToolCallError: (toolCall, error) => {
+        io.showToolError(toolCall.function.name, error.message);
+      },
+    };
+
+    for await (const chunk of chat.sendMessageStream(userInput, preset, events)) {
       if (isFirstChunk) {
         stopLoading();
         isFirstChunk = false;
@@ -79,8 +96,16 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
           aiPrefixShown = true;
         }
         io.write(chunk.delta);
+      } else if (chunk.type === "tool_call") {
+        if (!toolCallPending) {
+          toolCallPending = true;
+          if (hasReasoning) {
+            hasReasoning = false;
+            io.output(`${C.reset}`);
+          }
+          io.output(`${C.gray}  🔧 准备调用工具...${C.reset}`);
+        }
       }
-      // tool_call 不输出到终端
     }
     io.output(`${C.reset}`);
     io.output("");

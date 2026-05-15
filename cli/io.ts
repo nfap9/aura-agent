@@ -15,6 +15,7 @@ const C = {
   blue: "\x1b[34m",
   brightBlue: "\x1b[94m",
   magenta: "\x1b[35m",
+  brightMagenta: "\x1b[95m",
   red: "\x1b[31m",
 };
 
@@ -33,6 +34,14 @@ export interface IO {
   divider(char?: string, width?: number): void;
   /** 输出带样式的系统信息 */
   info(label: string, value: string, icon?: string): void;
+  /** 显示工具调用 */
+  showToolCall(name: string, args: Record<string, any>): void;
+  /** 显示工具执行结果 */
+  showToolResult(name: string, result: string): void;
+  /** 显示工具执行错误 */
+  showToolError(name: string, error: string): void;
+  /** 显示匹配到的 Skills */
+  showSkills(skills: { name: string; description: string }[]): void;
   /** 关闭 IO 资源 */
   close(): void;
 }
@@ -102,6 +111,28 @@ export class ConsoleIO implements IO {
     this.output(
       `${C.dim}${icon}${C.reset} ${C.bold}${label}:${C.reset} ${C.brightCyan}${value}${C.reset}`,
     );
+  }
+
+  showToolCall(name: string, _args: Record<string, any>): void {
+    this.output(`${C.yellow}🔧 调用工具:${C.reset} ${C.brightYellow}${name}${C.reset}`);
+  }
+
+  showToolResult(_name: string, _result: string): void {
+    // 不显示结果详情
+  }
+
+  showToolError(name: string, _error: string): void {
+    this.output(
+      `${C.red}❌ 工具错误:${C.reset} ${C.brightYellow}${name}${C.reset}`,
+    );
+  }
+
+  showSkills(skills: { name: string; description: string }[]): void {
+    for (const skill of skills) {
+      this.output(
+        `${C.magenta}🎯 使用技能:${C.reset} ${C.brightMagenta}${skill.name}${C.reset}`,
+      );
+    }
   }
 
   close(): void {
