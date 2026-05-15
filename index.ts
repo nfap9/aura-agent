@@ -1,5 +1,5 @@
 import "dotenv/config";
-import SimpleChat from "./Chat.ts";
+import Chat from "./Chat.ts";
 import { createProvider } from "./providers/index.ts";
 import { createDefaultRegistry } from "./tools/index.ts";
 import { ConsoleIO } from "./io.ts";
@@ -17,12 +17,12 @@ async function main() {
   io.output(`已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`);
 
   const provider = createProvider(API_FORMAT, API_KEY, BASE_URL);
-  const chat = new SimpleChat(
+  const chat = new Chat({
     provider,
-    MODEL_NAME,
-    SYSTEM_PROMPT,
-    registry,
-  );
+    modelName: MODEL_NAME,
+    systemPrompt: SYSTEM_PROMPT,
+    tools: registry,
+  });
 
   io.output(`使用 API 格式: ${API_FORMAT}\n`);
   io.output("开始对话，输入 'exit' 或按 Ctrl+C 退出\n");

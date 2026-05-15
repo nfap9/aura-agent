@@ -22,6 +22,15 @@ function normalizeInput(input: string | Message | Message[]): Message[] {
   return [input];
 }
 
+export interface ChatOptions {
+  provider: Provider;
+  modelName: string;
+  systemPrompt?: string;
+  tools?: ToolRegistry;
+  maxContextTokens?: number | undefined;
+  tokenizer?: Tokenizer | undefined;
+}
+
 export default class Chat {
   private messages: Message[] = [];
   private provider: Provider;
@@ -30,28 +39,21 @@ export default class Chat {
   private maxContextTokens: number;
   private tokenizer: Tokenizer | undefined;
 
-  constructor(
-    provider: Provider,
-    modelName: string,
-    systemPrompt: string,
-    tools: ToolRegistry,
-    maxContextTokens?: number,
-    tokenizer?: Tokenizer,
-  ) {
-    this.provider = provider;
-    this.modelName = modelName;
-    this.tools = tools;
-    this.maxContextTokens = maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
-    this.tokenizer = tokenizer;
-    if (systemPrompt) {
+  constructor(options: ChatOptions) {
+    this.provider = options.provider;
+    this.modelName = options.modelName;
+    this.tools = options.tools ?? new ToolRegistry();
+    this.maxContextTokens = options.maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
+    this.tokenizer = options.tokenizer;
+    if (options.systemPrompt) {
       this.messages.push({
         role: "system",
-        content: systemPrompt,
+        content: options.systemPrompt,
       });
     }
   }
 
-  // ========== Token 估算与截断 ==========
+  // ========== Token 估算与截断 限制上下文窗口大小 ==========
 
   private estimateTokens(text: string): number {
     if (!text) return 0;
@@ -264,14 +266,13 @@ export default class Chat {
 
   /** 复制当前对话状态，产生独立分支 */
   fork(): Chat {
-    const clone = new Chat(
-      this.provider,
-      this.modelName,
-      "",
-      this.tools,
-      this.maxContextTokens,
-      this.tokenizer,
-    );
+    const clone = new Chat({
+      provider: this.provider,
+      modelName: this.modelName,
+      tools: this.tools,
+      maxContextTokens: this.maxContextTokens,
+      tokenizer: this.tokenizer,
+    });
     clone.setHistory(this.messages);
     return clone;
   }
