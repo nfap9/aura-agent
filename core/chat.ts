@@ -9,9 +9,10 @@ import type {
 import type { Provider, StreamChunk } from "./providers/index.ts";
 import { ToolRegistry } from "./tools/registry.ts";
 import type { MemoryManager } from "./memory/manager.ts";
+import type { SkillRegistry } from "./skills/index.ts";
 
 const MAX_ITERATIONS = 10;
-const DEFAULT_MAX_CONTEXT_TOKENS = 6000;
+const DEFAULT_MAX_CONTEXT_TOKENS = 128 * 1024;
 
 function normalizeInput(input: string | Message | Message[]): Message[] {
   if (typeof input === "string") {
@@ -34,6 +35,8 @@ export interface ChatOptions {
   memoryManager?: MemoryManager | undefined;
   /** 是否自动将对话总结为记忆 */
   autoMemory?: boolean | undefined;
+  /** Skill 注册表，自动根据用户查询注入相关技能上下文 */
+  skillRegistry?: SkillRegistry | undefined;
 }
 
 export default class Chat {
@@ -45,6 +48,7 @@ export default class Chat {
   private tokenizer: Tokenizer | undefined;
   private memoryManager: MemoryManager | undefined;
   private autoMemory: boolean;
+  private skillRegistry: SkillRegistry | undefined;
 
   constructor(options: ChatOptions) {
     this.provider = options.provider;
@@ -54,6 +58,7 @@ export default class Chat {
     this.tokenizer = options.tokenizer;
     this.memoryManager = options.memoryManager;
     this.autoMemory = options.autoMemory ?? false;
+    this.skillRegistry = options.skillRegistry;
     if (options.systemPrompt) {
       this.messages.push({
         role: "system",
@@ -148,13 +153,21 @@ export default class Chat {
     let continueLoop = true;
     let iteration = 0;
 
+    // 提取用户查询文本（用于 skill 匹配）
+    const userQuery = inputMessages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content)
+      .join("\n");
+
     while (continueLoop && iteration < MAX_ITERATIONS) {
       iteration++;
       events?.onIterationStart?.(iteration, this.messages);
 
+      const apiMessages = this.buildMessagesWithSkills(userQuery);
+
       const stream = this.provider.chatStream({
         model: this.modelName,
-        messages: this.messages,
+        messages: apiMessages,
         tools: this.tools.getOpenAISchemas(),
         ...(options ? { options } : {}),
       });
@@ -279,6 +292,45 @@ export default class Chat {
     };
   }
 
+  // ========== Skill 上下文注入 ==========
+
+  /**
+   * 构建发送给模型的消息列表，在原 system prompt 后动态插入匹配的 skill
+   */
+  private buildMessagesWithSkills(userQuery: string): Message[] {
+    if (!this.skillRegistry || !userQuery) {
+      return this.messages;
+    }
+
+    const matched = this.skillRegistry.match(userQuery);
+    if (matched.length === 0) {
+      return this.messages;
+    }
+
+    const skillContent = matched
+      .map(
+        (s) =>
+          `## ${s.name}\n${s.description}\n\n${s.content}`,
+      )
+      .join("\n\n---\n\n");
+
+    const skillMsg: Message = {
+      role: "system",
+      content: `[Skills]\n${skillContent}`,
+    };
+
+    // 插入到原有 system prompt 之后（如果存在），否则放到开头
+    const systemIdx = this.messages.findIndex((m) => m.role === "system");
+    if (systemIdx !== -1) {
+      return [
+        ...this.messages.slice(0, systemIdx + 1),
+        skillMsg,
+        ...this.messages.slice(systemIdx + 1),
+      ];
+    }
+    return [skillMsg, ...this.messages];
+  }
+
   // ========== 对话状态管理 ==========
 
   /** 清空历史，可选择保留 system prompt */
@@ -309,6 +361,7 @@ export default class Chat {
       tokenizer: this.tokenizer,
       memoryManager: this.memoryManager ?? undefined,
       autoMemory: this.autoMemory,
+      skillRegistry: this.skillRegistry ?? undefined,
     });
     clone.setHistory(this.messages);
     return clone;

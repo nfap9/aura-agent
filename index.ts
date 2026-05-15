@@ -7,12 +7,14 @@ import { ChatPresets } from "./core/config/index.ts";
 import { MemoryManager, FileMemoryStorage } from "./core/memory/index.ts";
 import { runChatLoop } from "./cli/index.ts";
 import { SYSTEM_PROMPT } from "./core/prompts/index.ts";
+import { SkillRegistry } from "./core/skills/index.ts";
 
 const API_FORMAT = process.env.API_FORMAT || "openai";
 const API_KEY = process.env.API_KEY || "";
 const BASE_URL = process.env.BASE_URL || "";
 const MODEL_NAME = process.env.MODEL_NAME || "";
 const MEMORY_PATH = process.env.MEMORY_PATH || "./data/memories.json";
+const SKILLS_PATH = process.env.SKILLS_PATH || "";
 
 async function main() {
   const io = new ConsoleIO();
@@ -32,6 +34,18 @@ async function main() {
     `已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`,
   );
 
+  // 初始化 Skill
+  let skillRegistry: SkillRegistry | undefined;
+  
+  if (SKILLS_PATH) {
+    skillRegistry = await SkillRegistry.fromDirectory(SKILLS_PATH, {
+      maxActiveSkills: 3,
+    });
+    io.output(
+      `已加载 ${skillRegistry.count} 个 skill: ${skillRegistry.listSkills().join(", ")}\n`,
+    );
+  }
+
   // 初始化模型
   const provider = createProvider(API_FORMAT, API_KEY, BASE_URL);
   const chat = new Chat({
@@ -40,6 +54,7 @@ async function main() {
     systemPrompt: SYSTEM_PROMPT,
     tools: registry,
     memoryManager,
+    skillRegistry,
   });
 
   io.output(`使用 API 格式: ${API_FORMAT}\n`);
