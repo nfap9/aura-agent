@@ -8,33 +8,81 @@ export interface ChatLoopOptions {
   preset?: ChatCompletionOptions;
 }
 
+const C = {
+  reset: "\x1b[0m",
+  dim: "\x1b[2m",
+  bold: "\x1b[1m",
+  gray: "\x1b[90m",
+  brightGreen: "\x1b[92m",
+  brightCyan: "\x1b[96m",
+  brightYellow: "\x1b[93m",
+  brightMagenta: "\x1b[95m",
+};
+
 export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
   const { chat, io, preset } = options;
 
-  io.output("开始对话，输入 'exit' 或按 Ctrl+C 退出\n");
+  io.output("");
+  io.output(
+    `${C.dim}╭${"─".repeat(46)}╮${C.reset}`,
+  );
+  io.output(
+    `${C.dim}│${C.reset}  ${C.brightCyan}${C.bold}🤖 AI 助手${C.reset}${" ".repeat(36)}${C.dim}│${C.reset}`,
+  );
+  io.output(
+    `${C.dim}│${C.reset}  ${C.gray}输入 'exit' 或按 Ctrl+C 退出${C.reset}${" ".repeat(18)}${C.dim}│${C.reset}`,
+  );
+  io.output(
+    `${C.dim}╰${"─".repeat(46)}╯${C.reset}`,
+  );
+  io.output("");
 
   while (true) {
-    const userInput = await io.input("你: ");
+    const userInput = await io.input(`${C.brightGreen}✦ 你:${C.reset} `);
     if (userInput.trim().toLowerCase() === "exit") {
-      io.output("再见！");
+      io.output(`${C.gray}👋 再见！${C.reset}`);
       io.close();
       break;
     }
 
+    if (userInput.trim() === "") {
+      continue;
+    }
+
+    io.output("");
     const stopLoading = io.startLoading("思考中");
     let isFirstChunk = true;
+    let hasReasoning = false;
+    let aiPrefixShown = false;
 
-    io.write("AI: ");
     for await (const chunk of chat.sendMessageStream(userInput, preset)) {
       if (isFirstChunk) {
         stopLoading();
         isFirstChunk = false;
       }
-      if (chunk.type === "content" || chunk.type === "reasoning") {
+      if (chunk.type === "reasoning") {
+        if (!hasReasoning) {
+          hasReasoning = true;
+          if (aiPrefixShown) {
+            io.output("");
+          }
+          io.write(`${C.gray}  💭 `);
+        }
+        io.write(chunk.delta);
+      } else if (chunk.type === "content") {
+        if (hasReasoning) {
+          hasReasoning = false;
+          io.output(`${C.reset}`);
+        }
+        if (!aiPrefixShown) {
+          io.write(`${C.brightCyan}● AI:${C.reset} `);
+          aiPrefixShown = true;
+        }
         io.write(chunk.delta);
       }
       // tool_call 不输出到终端
     }
+    io.output(`${C.reset}`);
     io.output("");
   }
 }

@@ -19,6 +19,10 @@ const SKILLS_PATH = process.env.SKILLS_PATH || "";
 async function main() {
   const io = new ConsoleIO();
 
+  io.output("");
+  io.output("  \x1b[1m\x1b[96m🚀 启动 AI 助手\x1b[0m");
+  io.divider("─", 48);
+
   // 初始化长期记忆
   const memoryStorage = new FileMemoryStorage(MEMORY_PATH);
   const memoryManager = new MemoryManager({
@@ -27,22 +31,26 @@ async function main() {
     maxEntries: 500,
   });
   const memoryCount = await memoryManager.getCount();
-  io.output(`已加载 ${memoryCount} 条长期记忆\n`);
+  io.info("长期记忆", `${memoryCount} 条`, "🧠");
 
   const registry = createDefaultRegistry({ memoryManager });
-  io.output(
-    `已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`,
+  io.info(
+    "工具",
+    `${registry.count} 个 (${registry.listTools().join(", ")})`,
+    "🔧",
   );
 
   // 初始化 Skill
   let skillRegistry: SkillRegistry | undefined;
-  
+
   if (SKILLS_PATH) {
     skillRegistry = await SkillRegistry.fromDirectory(SKILLS_PATH, {
       maxActiveSkills: 3,
     });
-    io.output(
-      `已加载 ${skillRegistry.count} 个 skill: ${skillRegistry.listSkills().join(", ")}\n`,
+    io.info(
+      "Skills",
+      `${skillRegistry.count} 个 (${skillRegistry.listSkills().join(", ")})`,
+      "🎯",
     );
   }
 
@@ -57,7 +65,8 @@ async function main() {
     skillRegistry,
   });
 
-  io.output(`使用 API 格式: ${API_FORMAT}\n`);
+  io.info("API 格式", API_FORMAT, "⚡");
+  io.divider("─", 48);
 
   // 开始对话
   await runChatLoop({ chat, io, preset: ChatPresets.balanced });
