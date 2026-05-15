@@ -1,9 +1,7 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 import readline from "readline";
 import SimpleChat from "./Chat.ts";
 import { tools } from "./tools/index.ts";
-
-dotenv.config();
 
 const API_KEY = process.env.API_KEY || "";
 const BASE_URL = process.env.BASE_URL || "";
