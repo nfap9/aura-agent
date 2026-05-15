@@ -39,12 +39,15 @@ async function main() {
     let isFirstChunk = true;
 
     io.write("AI: ");
-    for await (const chunk of chat.sendMessage(userInput)) {
+    for await (const chunk of chat.sendMessageStream(userInput)) {
       if (isFirstChunk) {
         stopLoading();
         isFirstChunk = false;
       }
-      io.write(chunk);
+      if (chunk.type === "content" || chunk.type === "reasoning") {
+        io.write(chunk.delta);
+      }
+      // tool_call 不输出到终端
     }
     io.output("");
   }

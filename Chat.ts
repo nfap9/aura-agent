@@ -1,9 +1,26 @@
-import type { Message } from "./types.ts";
-import type { Provider } from "./providers/index.ts";
+import type {
+  Message,
+  ToolCall,
+  Tokenizer,
+  ChatCompletionOptions,
+  ChatEvents,
+  ChatResult,
+} from "./types.ts";
+import type { Provider, StreamChunk } from "./providers/index.ts";
 import { ToolRegistry } from "./tools/registry.ts";
 
 const MAX_ITERATIONS = 10;
 const DEFAULT_MAX_CONTEXT_TOKENS = 6000;
+
+function normalizeInput(input: string | Message | Message[]): Message[] {
+  if (typeof input === "string") {
+    return [{ role: "user", content: input }];
+  }
+  if (Array.isArray(input)) {
+    return input;
+  }
+  return [input];
+}
 
 export default class Chat {
   private messages: Message[] = [];
@@ -11,6 +28,7 @@ export default class Chat {
   private tools: ToolRegistry;
   private modelName: string;
   private maxContextTokens: number;
+  private tokenizer: Tokenizer | undefined;
 
   constructor(
     provider: Provider,
@@ -18,21 +36,28 @@ export default class Chat {
     systemPrompt: string,
     tools: ToolRegistry,
     maxContextTokens?: number,
+    tokenizer?: Tokenizer,
   ) {
     this.provider = provider;
     this.modelName = modelName;
     this.tools = tools;
     this.maxContextTokens = maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
-    this.messages.push({
-      role: "system",
-      content: systemPrompt,
-    });
+    this.tokenizer = tokenizer;
+    if (systemPrompt) {
+      this.messages.push({
+        role: "system",
+        content: systemPrompt,
+      });
+    }
   }
 
   // ========== Token 估算与截断 ==========
 
   private estimateTokens(text: string): number {
     if (!text) return 0;
+    if (this.tokenizer) {
+      return this.tokenizer.encode(text).length;
+    }
     const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
     const otherChars = text.length - chineseChars;
     return chineseChars + Math.ceil(otherChars / 4);
@@ -71,13 +96,16 @@ export default class Chat {
       totalTokens -= this.estimateMessageTokens(removed);
       this.messages.splice(startIndex, 1);
     }
-    // trimHistory 静默执行，不输出任何信息
   }
 
   // ========== 核心对话逻辑 ==========
 
-  async *sendMessage(userInput: string): AsyncGenerator<string> {
-    this.messages.push({ role: "user", content: userInput });
+  private async *runLoop(
+    inputMessages: Message[],
+    options?: ChatCompletionOptions,
+    events?: ChatEvents,
+  ): AsyncGenerator<StreamChunk> {
+    this.messages.push(...inputMessages);
     this.trimHistory();
 
     let continueLoop = true;
@@ -85,25 +113,29 @@ export default class Chat {
 
     while (continueLoop && iteration < MAX_ITERATIONS) {
       iteration++;
+      events?.onIterationStart?.(iteration, this.messages);
 
       const stream = this.provider.chatStream({
         model: this.modelName,
         messages: this.messages,
         tools: this.tools.getOpenAISchemas(),
+        ...(options ? { options } : {}),
       });
 
       let content = "";
       let reasoningContent = "";
-      const toolCalls: any[] = [];
+      const toolCalls: ToolCall[] = [];
       let hasToolCall = false;
 
       for await (const chunk of stream) {
         if (chunk.type === "content") {
           content += chunk.delta;
-          yield chunk.delta;
+          events?.onContentChunk?.(chunk.delta);
+          yield chunk;
         } else if (chunk.type === "reasoning") {
           reasoningContent += chunk.delta;
-          yield chunk.delta;
+          events?.onReasoningChunk?.(chunk.delta);
+          yield chunk;
         } else if (chunk.type === "tool_call") {
           hasToolCall = true;
           const { index, id, name, arguments: args } = chunk.toolCall!;
@@ -117,15 +149,18 @@ export default class Chat {
           if (id) toolCalls[index].id += id;
           if (name) toolCalls[index].function.name += name;
           if (args) toolCalls[index].function.arguments += args;
+          yield chunk;
         }
       }
 
-      this.messages.push({
+      const assistantMessage: Message = {
         role: "assistant",
         content,
-        reasoning_content: reasoningContent || undefined,
-        tool_calls: hasToolCall ? toolCalls : undefined,
-      } as any);
+        ...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+        ...(hasToolCall ? { tool_calls: toolCalls } : {}),
+      };
+      this.messages.push(assistantMessage);
+      events?.onIterationEnd?.(iteration, assistantMessage);
 
       if (!hasToolCall) {
         continueLoop = false;
@@ -135,10 +170,14 @@ export default class Chat {
           const parseArgs = JSON.parse(args);
           let result: string;
 
+          events?.onToolCallStart?.(toolCall);
           try {
             result = await this.tools.execute(name, parseArgs);
+            events?.onToolCallEnd?.(toolCall, result);
           } catch (err: any) {
-            result = `工具执行错误: ${err.message}`;
+            const error = err instanceof Error ? err : new Error(String(err));
+            events?.onToolCallError?.(toolCall, error);
+            result = `工具执行错误: ${error.message}`;
           }
 
           this.messages.push({
@@ -150,13 +189,90 @@ export default class Chat {
       }
 
       if (iteration >= MAX_ITERATIONS && hasToolCall) {
-        yield "\n[到达最大请求次数，已停止]";
+        const stopMsg = "\n[到达最大请求次数，已停止]";
+        yield { type: "content", delta: stopMsg };
         continueLoop = false;
       }
     }
   }
 
-  getHistory() {
+  /** 流式调用：返回结构化 StreamChunk */
+  async *sendMessageStream(
+    input: string | Message | Message[],
+    options?: ChatCompletionOptions,
+    events?: ChatEvents,
+  ): AsyncGenerator<StreamChunk> {
+    const inputMessages = normalizeInput(input);
+    yield* this.runLoop(inputMessages, options, events);
+  }
+
+  /** 非流式调用：返回完整结果 */
+  async sendMessage(
+    input: string | Message | Message[],
+    options?: ChatCompletionOptions,
+    events?: ChatEvents,
+  ): Promise<ChatResult> {
+    const inputMessages = normalizeInput(input);
+    let content = "";
+    let reasoningContent = "";
+    let toolCalls: ToolCall[] | undefined;
+
+    for await (const chunk of this.runLoop(inputMessages, options, events)) {
+      if (chunk.type === "content") {
+        content += chunk.delta;
+      } else if (chunk.type === "reasoning") {
+        reasoningContent += chunk.delta;
+      } else if (chunk.type === "tool_call") {
+        // tool_calls 已在 runLoop 中写入 this.messages，这里不需要额外累加
+        // 但我们可以在最后从最后一条 assistant message 中提取
+      }
+    }
+
+    // 从最后一条 assistant message 中提取 toolCalls
+    const lastAssistant = [...this.messages]
+      .reverse()
+      .find((m) => m.role === "assistant");
+    toolCalls = lastAssistant?.tool_calls;
+
+    return {
+      content,
+      ...(reasoningContent ? { reasoningContent } : {}),
+      ...(toolCalls ? { toolCalls } : {}),
+      messages: [...this.messages],
+    };
+  }
+
+  // ========== 对话状态管理 ==========
+
+  /** 清空历史，可选择保留 system prompt */
+  clearHistory(keepSystemPrompt = true): void {
+    if (keepSystemPrompt && this.messages[0]?.role === "system") {
+      const systemMsg = this.messages[0];
+      this.messages = [systemMsg];
+    } else {
+      this.messages = [];
+    }
+  }
+
+  getHistory(): Message[] {
     return [...this.messages];
+  }
+
+  setHistory(messages: Message[]): void {
+    this.messages = [...messages];
+  }
+
+  /** 复制当前对话状态，产生独立分支 */
+  fork(): Chat {
+    const clone = new Chat(
+      this.provider,
+      this.modelName,
+      "",
+      this.tools,
+      this.maxContextTokens,
+      this.tokenizer,
+    );
+    clone.setHistory(this.messages);
+    return clone;
   }
 }
