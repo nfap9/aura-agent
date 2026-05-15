@@ -1,16 +1,14 @@
 import OpenAI from "openai";
 import type { Message } from "./types.ts";
-import { calculate, getWeather } from "./tools/utils.ts";
+import { ToolRegistry } from "./tools/registry.ts";
 
 const MAX_ITERATIONS = 10;
-
-// 默认最大上下文 token 数（可根据模型调整：4k/8k/16k/32k/128k）
 const DEFAULT_MAX_CONTEXT_TOKENS = 6000;
 
 export default class Chat {
   private messages: Message[] = [];
   private client: OpenAI;
-  private tools: any[];
+  private tools: ToolRegistry;
   private modelName: string;
   private maxContextTokens: number;
 
@@ -19,7 +17,7 @@ export default class Chat {
     baseURL: string,
     modelName: string,
     systemPrompt: string,
-    tools: any,
+    tools: ToolRegistry,
     maxContextTokens?: number,
   ) {
     this.client = new OpenAI({ apiKey, baseURL });
@@ -32,11 +30,8 @@ export default class Chat {
     });
   }
 
-  /**
-   * 粗略估算文本的 token 数
-   * 中文：1 字 ≈ 1 token
-   * 英文/符号/数字：4 字符 ≈ 1 token
-   */
+  // ========== Token 估算与截断 ==========
+
   private estimateTokens(text: string): number {
     if (!text) return 0;
     const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
@@ -44,51 +39,29 @@ export default class Chat {
     return chineseChars + Math.ceil(otherChars / 4);
   }
 
-  /**
-   * 估算单条消息的 token 数（包含 content、reasoning_content、tool_calls）
-   */
   private estimateMessageTokens(msg: Message): number {
-    let tokens = 4; // 角色标记等固定开销
-
+    let tokens = 4;
     tokens += this.estimateTokens(msg.content || "");
     tokens += this.estimateTokens(msg.reasoning_content || "");
-
     if (msg.tool_calls) {
       for (const tc of msg.tool_calls) {
         tokens += this.estimateTokens(tc.function.name);
         tokens += this.estimateTokens(tc.function.arguments);
-        tokens += 4; // 单个 tool_call 开销
+        tokens += 4;
       }
     }
-
-    if (msg.role === "tool") {
-      tokens += 2; // tool 结果额外开销
-    }
-
+    if (msg.role === "tool") tokens += 2;
     return tokens;
   }
 
-  /**
-   * 滑动窗口截断：保留 system prompt，从旧到新丢弃消息直到满足 token 限制。
-   * 策略：始终保留 system prompt + 最近至少一轮对话（user + assistant）。
-   */
   private trimHistory() {
     let totalTokens = 0;
     for (const msg of this.messages) {
       totalTokens += this.estimateMessageTokens(msg);
     }
+    if (totalTokens <= this.maxContextTokens) return;
 
-    if (totalTokens <= this.maxContextTokens) {
-      return; // 未超限，无需截断
-    }
-
-    // system prompt 固定保留
-    let startIndex = 0;
-    if (this.messages[0]?.role === "system") {
-      startIndex = 1;
-    }
-
-    // 至少保留最近一轮对话：user + assistant（2 条）
+    let startIndex = this.messages[0]?.role === "system" ? 1 : 0;
     const minKeepCount = 2;
 
     while (
@@ -101,18 +74,14 @@ export default class Chat {
     }
 
     console.log(
-      `[trimHistory] 截断后剩余 ${this.messages.length} 条消息，` +
-        `估算 token: ${totalTokens}/${this.maxContextTokens}`
+      `[trimHistory] ${this.messages.length} msgs, ~${totalTokens}/${this.maxContextTokens} tokens`
     );
   }
 
-  async *sendMessage(userInput: string): AsyncGenerator<string> {
-    this.messages.push({
-      role: "user",
-      content: userInput,
-    });
+  // ========== 核心对话逻辑 ==========
 
-    // 每次新用户消息到达后截断历史
+  async *sendMessage(userInput: string): AsyncGenerator<string> {
+    this.messages.push({ role: "user", content: userInput });
     this.trimHistory();
 
     let continueLoop = true;
@@ -125,7 +94,7 @@ export default class Chat {
       const stream = await this.client.chat.completions.create({
         model: this.modelName,
         messages: this.messages as any,
-        tools: this.tools,
+        tools: this.tools.getOpenAISchemas(),
         tool_choice: "auto",
         stream: true,
       });
@@ -160,9 +129,7 @@ export default class Chat {
               };
             }
             if (tc.id) toolCalls[index].id += tc.id;
-            if (tc.function?.name) {
-              toolCalls[index].function.name += tc.function.name;
-            }
+            if (tc.function?.name) toolCalls[index].function.name += tc.function.name;
             if (tc.function?.arguments) {
               toolCalls[index].function.arguments += tc.function.arguments;
             }
@@ -170,7 +137,6 @@ export default class Chat {
         }
       }
 
-      // 保存 assistant 本轮回复（含工具调用请求或最终答案）
       this.messages.push({
         role: "assistant",
         content,
@@ -185,17 +151,14 @@ export default class Chat {
           const { name, arguments: args } = toolCall.function;
           const parseArgs = JSON.parse(args);
           let result: string;
-          switch (name) {
-            case "get_weather":
-              result = await getWeather(parseArgs.city);
-              break;
-            case "calculate":
-              result = calculate(parseArgs.expression);
-              break;
-            default:
-              result = "未知工具";
+
+          try {
+            result = await this.tools.execute(name, parseArgs);
+          } catch (err: any) {
+            result = `工具执行错误: ${err.message}`;
           }
-          console.log(`\n工具生成#${toolCall.id}：${result}`);
+
+          console.log(`\n工具[${name}]→ ${result}`);
 
           this.messages.push({
             role: "tool",

@@ -1,14 +1,13 @@
 import "dotenv/config";
 import readline from "readline";
 import SimpleChat from "./Chat.ts";
-import { tools } from "./tools/index.ts";
+import { createDefaultRegistry } from "./tools/index.ts";
 
 const API_KEY = process.env.API_KEY || "";
 const BASE_URL = process.env.BASE_URL || "";
 const MODEL_NAME = process.env.MODEL_NAME || "";
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "";
 
-/** 启动一个旋转 loading 动画，返回一个用于停止的函数 */
 function startLoading(text = "思考中"): () => void {
   const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   let i = 0;
@@ -19,7 +18,6 @@ function startLoading(text = "思考中"): () => void {
   }, 80);
   return () => {
     clearInterval(timer);
-    // 用空格覆盖掉 loading 行，并将光标移回行首
     process.stdout.write("\r" + " ".repeat(text.length + 6) + "\r");
   };
 }
@@ -30,12 +28,15 @@ const rl = readline.createInterface({
 });
 
 async function main() {
+  const registry = createDefaultRegistry();
+  console.log(`已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`);
+
   const chat = new SimpleChat(
     API_KEY,
     BASE_URL,
     MODEL_NAME,
     SYSTEM_PROMPT,
-    tools,
+    registry,
   );
 
   console.log("开始对话，输入 'exit' 或按 Ctrl+C 退出\n");
@@ -64,7 +65,6 @@ async function main() {
       }
       process.stdout.write(chunk);
     }
-    // 每次完整回复后换行，空一行再进入下一轮
     console.log("\n");
   }
 }
