@@ -3,6 +3,7 @@ import Chat from "./Chat.ts";
 import { createProvider } from "./providers/index.ts";
 import { createDefaultRegistry } from "./tools/index.ts";
 import { ConsoleIO } from "./io.ts";
+import { ChatPresets } from "./preset/modelConfig.ts";
 
 const API_FORMAT = process.env.API_FORMAT || "openai";
 const API_KEY = process.env.API_KEY || "";
@@ -14,7 +15,9 @@ async function main() {
   const io = new ConsoleIO();
 
   const registry = createDefaultRegistry();
-  io.output(`已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`);
+  io.output(
+    `已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`,
+  );
 
   const provider = createProvider(API_FORMAT, API_KEY, BASE_URL);
   const chat = new Chat({
@@ -39,7 +42,10 @@ async function main() {
     let isFirstChunk = true;
 
     io.write("AI: ");
-    for await (const chunk of chat.sendMessageStream(userInput)) {
+    for await (const chunk of chat.sendMessageStream(
+      userInput,
+      ChatPresets.balanced,
+    )) {
       if (isFirstChunk) {
         stopLoading();
         isFirstChunk = false;
