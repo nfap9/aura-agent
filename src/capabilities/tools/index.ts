@@ -1,9 +1,9 @@
 import { ToolRegistry } from "./registry.ts";
-import { calculatorDefinition, calculate } from "./calculator.ts";
-import { createMemoryTools } from "./memory.ts";
+import { calculatorDefinition, calculate } from "./native/calculator.ts";
+import { createMemoryTools } from "./memory-tool.ts";
 import type { MemoryManager } from "../memory/manager.ts";
-import { systemTime, systemTimeDefinition } from "./systemTime.ts";
-import { bashDefinition, executeBash } from "./bash.ts";
+import { systemTime, systemTimeDefinition } from "./native/systemTime.ts";
+import { bashDefinition, executeBash } from "./native/bash.ts";
 import { MCPClientManager, type MCPConfig } from "./mcp.ts";
 
 export type { ToolDefinition, ToolHandler } from "./types.ts";

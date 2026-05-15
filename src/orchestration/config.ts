@@ -1,4 +1,4 @@
-import type { ChatCompletionOptions } from "../types.ts";
+import type { ChatCompletionOptions } from "../domain/types.ts";
 
 /** 预制模型配置项，可直接作为 options 传入 sendMessage / sendMessageStream */
 export const ChatPresets = {

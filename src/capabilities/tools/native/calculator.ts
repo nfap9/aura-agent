@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "./types.ts";
+import type { ToolDefinition } from "../types.ts";
 
 export const calculatorDefinition: ToolDefinition = {
   name: "calculate",

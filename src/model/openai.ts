@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { Provider, StreamChunk } from "./base.ts";
-import type { Message, ChatCompletionOptions } from "../types.ts";
+import type { Message, ChatCompletionOptions } from "../domain/types.ts";
 
 export class OpenAIProvider implements Provider {
   private client: OpenAI;

@@ -5,11 +5,11 @@ import type {
   ChatCompletionOptions,
   ChatEvents,
   ChatResult,
-} from "./types.ts";
-import type { Provider, StreamChunk } from "./providers/index.ts";
-import { ToolRegistry } from "./tools/registry.ts";
-import type { MemoryManager } from "./memory/manager.ts";
-import type { SkillRegistry } from "./skills/index.ts";
+} from "../domain/types.ts";
+import type { Provider, StreamChunk } from "../model/index.ts";
+import { ToolRegistry } from "../capabilities/tools/registry.ts";
+import type { MemoryProvider } from "./contracts/memory.ts";
+import type { SkillProvider } from "./contracts/skill.ts";
 
 const MAX_ITERATIONS = 10;
 const DEFAULT_MAX_CONTEXT_TOKENS = 128 * 1024;
@@ -31,12 +31,12 @@ export interface ChatOptions {
   tools?: ToolRegistry;
   maxContextTokens?: number | undefined;
   tokenizer?: Tokenizer | undefined;
-  /** 长期记忆管理器，启用后自动检索和注入相关记忆 */
-  memoryManager?: MemoryManager | undefined;
+  /** 长期记忆能力，启用后自动检索和注入相关记忆 */
+  memory?: MemoryProvider | undefined;
   /** 是否自动将对话总结为记忆 */
   autoMemory?: boolean | undefined;
-  /** Skill 注册表，自动根据用户查询注入相关技能上下文 */
-  skillRegistry?: SkillRegistry | undefined;
+  /** 技能能力，自动根据用户查询注入相关技能上下文 */
+  skills?: SkillProvider | undefined;
 }
 
 export default class Chat {
@@ -46,9 +46,9 @@ export default class Chat {
   private modelName: string;
   private maxContextTokens: number;
   private tokenizer: Tokenizer | undefined;
-  private memoryManager: MemoryManager | undefined;
+  private memory: MemoryProvider | undefined;
   private autoMemory: boolean;
-  private skillRegistry: SkillRegistry | undefined;
+  private skills: SkillProvider | undefined;
 
   constructor(options: ChatOptions) {
     this.provider = options.provider;
@@ -56,9 +56,9 @@ export default class Chat {
     this.tools = options.tools ?? new ToolRegistry();
     this.maxContextTokens = options.maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
     this.tokenizer = options.tokenizer;
-    this.memoryManager = options.memoryManager;
+    this.memory = options.memory;
     this.autoMemory = options.autoMemory ?? false;
-    this.skillRegistry = options.skillRegistry;
+    this.skills = options.skills;
     if (options.systemPrompt) {
       this.messages.push({
         role: "system",
@@ -122,13 +122,13 @@ export default class Chat {
     events?: ChatEvents,
   ): AsyncGenerator<StreamChunk> {
     // 注入长期记忆到上下文
-    if (this.memoryManager && inputMessages.length > 0) {
+    if (this.memory && inputMessages.length > 0) {
       const query = inputMessages
         .filter((m) => m.role === "user")
         .map((m) => m.content)
         .join("\n");
       if (query) {
-        const memoryContext = await this.memoryManager.getRelevantContext(query);
+        const memoryContext = await this.memory.getRelevantContext(query);
         if (memoryContext) {
           // 将记忆附加到第一条 user message 前面
           const firstUserIdx = inputMessages.findIndex((m) => m.role === "user");
@@ -163,7 +163,7 @@ export default class Chat {
       iteration++;
       events?.onIterationStart?.(iteration, this.messages);
 
-      const apiMessages = this.buildMessagesWithSkills(userQuery, events);
+      const apiMessages = await this.buildMessagesWithSkills(userQuery, events);
 
       const stream = this.provider.chatStream({
         model: this.modelName,
@@ -297,15 +297,15 @@ export default class Chat {
   /**
    * 构建发送给模型的消息列表，在原 system prompt 后动态插入匹配的 skill
    */
-  private buildMessagesWithSkills(
+  private async buildMessagesWithSkills(
     userQuery: string,
     events?: ChatEvents,
-  ): Message[] {
-    if (!this.skillRegistry || !userQuery) {
+  ): Promise<Message[]> {
+    if (!this.skills || !userQuery) {
       return this.messages;
     }
 
-    const matched = this.skillRegistry.match(userQuery);
+    const matched = await this.skills.match(userQuery);
     if (matched.length === 0) {
       return this.messages;
     }
@@ -366,9 +366,9 @@ export default class Chat {
       tools: this.tools,
       maxContextTokens: this.maxContextTokens,
       tokenizer: this.tokenizer,
-      memoryManager: this.memoryManager ?? undefined,
+      memory: this.memory ?? undefined,
       autoMemory: this.autoMemory,
-      skillRegistry: this.skillRegistry ?? undefined,
+      skills: this.skills ?? undefined,
     });
     clone.setHistory(this.messages);
     return clone;

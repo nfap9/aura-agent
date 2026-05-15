@@ -1,6 +1,6 @@
 import type { IO } from "./io.ts";
-import type Chat from "../core/chat.ts";
-import type { ChatCompletionOptions, ChatEvents } from "../core/types.ts";
+import type Chat from "../../orchestration/chat.ts";
+import type { ChatCompletionOptions, ChatEvents } from "../../domain/types.ts";
 
 export interface ChatLoopOptions {
   chat: Chat;
