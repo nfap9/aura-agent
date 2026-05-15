@@ -8,6 +8,7 @@ import type {
 } from "./types.ts";
 import type { Provider, StreamChunk } from "./providers/index.ts";
 import { ToolRegistry } from "./tools/registry.ts";
+import type { MemoryManager } from "./memory/manager.ts";
 
 const MAX_ITERATIONS = 10;
 const DEFAULT_MAX_CONTEXT_TOKENS = 6000;
@@ -29,6 +30,10 @@ export interface ChatOptions {
   tools?: ToolRegistry;
   maxContextTokens?: number | undefined;
   tokenizer?: Tokenizer | undefined;
+  /** 长期记忆管理器，启用后自动检索和注入相关记忆 */
+  memoryManager?: MemoryManager | undefined;
+  /** 是否自动将对话总结为记忆 */
+  autoMemory?: boolean | undefined;
 }
 
 export default class Chat {
@@ -38,6 +43,8 @@ export default class Chat {
   private modelName: string;
   private maxContextTokens: number;
   private tokenizer: Tokenizer | undefined;
+  private memoryManager: MemoryManager | undefined;
+  private autoMemory: boolean;
 
   constructor(options: ChatOptions) {
     this.provider = options.provider;
@@ -45,6 +52,8 @@ export default class Chat {
     this.tools = options.tools ?? new ToolRegistry();
     this.maxContextTokens = options.maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
     this.tokenizer = options.tokenizer;
+    this.memoryManager = options.memoryManager;
+    this.autoMemory = options.autoMemory ?? false;
     if (options.systemPrompt) {
       this.messages.push({
         role: "system",
@@ -107,6 +116,32 @@ export default class Chat {
     options?: ChatCompletionOptions,
     events?: ChatEvents,
   ): AsyncGenerator<StreamChunk> {
+    // 注入长期记忆到上下文
+    if (this.memoryManager && inputMessages.length > 0) {
+      const query = inputMessages
+        .filter((m) => m.role === "user")
+        .map((m) => m.content)
+        .join("\n");
+      if (query) {
+        const memoryContext = await this.memoryManager.getRelevantContext(query);
+        if (memoryContext) {
+          // 将记忆附加到第一条 user message 前面
+          const firstUserIdx = inputMessages.findIndex((m) => m.role === "user");
+          if (firstUserIdx !== -1) {
+            const target = inputMessages[firstUserIdx]!;
+            const original = target.content ?? "";
+            inputMessages[firstUserIdx] = {
+              role: target.role,
+              content: `${memoryContext}\n---\n${original}`,
+              ...(target.reasoning_content !== undefined ? { reasoning_content: target.reasoning_content } : {}),
+              ...(target.tool_calls !== undefined ? { tool_calls: target.tool_calls } : {}),
+              ...(target.tool_call_id !== undefined ? { tool_call_id: target.tool_call_id } : {}),
+            };
+          }
+        }
+      }
+    }
+
     this.messages.push(...inputMessages);
     this.trimHistory();
 
@@ -272,6 +307,8 @@ export default class Chat {
       tools: this.tools,
       maxContextTokens: this.maxContextTokens,
       tokenizer: this.tokenizer,
+      memoryManager: this.memoryManager ?? undefined,
+      autoMemory: this.autoMemory,
     });
     clone.setHistory(this.messages);
     return clone;
