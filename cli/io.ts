@@ -11,6 +11,8 @@ export interface IO {
   debug(message: string): void;
   /** 开始加载动画，返回停止函数 */
   startLoading(text?: string): () => void;
+  /** 关闭 IO 资源 */
+  close(): void;
 }
 
 export class ConsoleIO implements IO {
