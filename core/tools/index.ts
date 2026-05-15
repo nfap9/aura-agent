@@ -3,6 +3,7 @@ import { weatherDefinition, getWeather } from "./weather.ts";
 import { calculatorDefinition, calculate } from "./calculator.ts";
 import { createMemoryTools } from "./memory.ts";
 import type { MemoryManager } from "../memory/manager.ts";
+import { systemTime, systemTimeDefinition } from "./systemTime.ts";
 
 export type { ToolDefinition, ToolHandler } from "./types.ts";
 export { ToolRegistry } from "./registry.ts";
@@ -15,15 +16,19 @@ export interface RegistryOptions {
 /**
  * 创建包含默认工具的注册表
  */
-export function createDefaultRegistry(options: RegistryOptions = {}): ToolRegistry {
+export function createDefaultRegistry(
+  options: RegistryOptions = {},
+): ToolRegistry {
   const registry = new ToolRegistry();
   registry.register(weatherDefinition, (args) => getWeather(args));
   registry.register(calculatorDefinition, (args) => calculate(args));
+  registry.register(systemTimeDefinition, () => systemTime());
 
   if (options.memoryManager) {
     const memoryTools = createMemoryTools(options.memoryManager);
     for (const def of memoryTools.definitions) {
-      const handler = memoryTools.handlers[def.name as keyof typeof memoryTools.handlers];
+      const handler =
+        memoryTools.handlers[def.name as keyof typeof memoryTools.handlers];
       registry.register(def, (args) => handler(args));
     }
   }
