@@ -1,8 +1,10 @@
 import "dotenv/config";
 import readline from "readline";
 import SimpleChat from "./Chat.ts";
+import { createProvider } from "./providers/index.ts";
 import { createDefaultRegistry } from "./tools/index.ts";
 
+const API_FORMAT = process.env.API_FORMAT || "openai";
 const API_KEY = process.env.API_KEY || "";
 const BASE_URL = process.env.BASE_URL || "";
 const MODEL_NAME = process.env.MODEL_NAME || "";
@@ -31,14 +33,15 @@ async function main() {
   const registry = createDefaultRegistry();
   console.log(`已加载 ${registry.count} 个工具: ${registry.listTools().join(", ")}\n`);
 
+  const provider = createProvider(API_FORMAT, API_KEY, BASE_URL);
   const chat = new SimpleChat(
-    API_KEY,
-    BASE_URL,
+    provider,
     MODEL_NAME,
     SYSTEM_PROMPT,
     registry,
   );
 
+  console.log(`使用 API 格式: ${API_FORMAT}\n`);
   console.log("开始对话，输入 'exit' 或按 Ctrl+C 退出\n");
 
   const ask = () =>

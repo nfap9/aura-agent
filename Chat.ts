@@ -1,5 +1,5 @@
-import OpenAI from "openai";
 import type { Message } from "./types.ts";
+import type { Provider } from "./providers/index.ts";
 import { ToolRegistry } from "./tools/registry.ts";
 
 const MAX_ITERATIONS = 10;
@@ -7,20 +7,19 @@ const DEFAULT_MAX_CONTEXT_TOKENS = 6000;
 
 export default class Chat {
   private messages: Message[] = [];
-  private client: OpenAI;
+  private provider: Provider;
   private tools: ToolRegistry;
   private modelName: string;
   private maxContextTokens: number;
 
   constructor(
-    apiKey: string,
-    baseURL: string,
+    provider: Provider,
     modelName: string,
     systemPrompt: string,
     tools: ToolRegistry,
     maxContextTokens?: number,
   ) {
-    this.client = new OpenAI({ apiKey, baseURL });
+    this.provider = provider;
     this.modelName = modelName;
     this.tools = tools;
     this.maxContextTokens = maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
@@ -91,12 +90,10 @@ export default class Chat {
       iteration++;
       console.log(`\n----第${iteration}轮请求----`);
 
-      const stream = await this.client.chat.completions.create({
+      const stream = this.provider.chatStream({
         model: this.modelName,
-        messages: this.messages as any,
+        messages: this.messages,
         tools: this.tools.getOpenAISchemas(),
-        tool_choice: "auto",
-        stream: true,
       });
 
       let content = "";
@@ -105,35 +102,25 @@ export default class Chat {
       let hasToolCall = false;
 
       for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta;
-
-        if (delta?.content) {
-          content += delta.content;
-          yield delta.content;
-        }
-
-        if (delta?.reasoning_content) {
-          reasoningContent += delta.reasoning_content;
-          yield delta.reasoning_content;
-        }
-
-        if (delta?.tool_calls) {
+        if (chunk.type === "content") {
+          content += chunk.delta;
+          yield chunk.delta;
+        } else if (chunk.type === "reasoning") {
+          reasoningContent += chunk.delta;
+          yield chunk.delta;
+        } else if (chunk.type === "tool_call") {
           hasToolCall = true;
-          for (const tc of delta.tool_calls) {
-            const index = tc.index ?? 0;
-            if (!toolCalls[index]) {
-              toolCalls[index] = {
-                id: "",
-                type: "function",
-                function: { name: "", arguments: "" },
-              };
-            }
-            if (tc.id) toolCalls[index].id += tc.id;
-            if (tc.function?.name) toolCalls[index].function.name += tc.function.name;
-            if (tc.function?.arguments) {
-              toolCalls[index].function.arguments += tc.function.arguments;
-            }
+          const { index, id, name, arguments: args } = chunk.toolCall!;
+          if (!toolCalls[index]) {
+            toolCalls[index] = {
+              id: "",
+              type: "function",
+              function: { name: "", arguments: "" },
+            };
           }
+          if (id) toolCalls[index].id += id;
+          if (name) toolCalls[index].function.name += name;
+          if (args) toolCalls[index].function.arguments += args;
         }
       }
 
