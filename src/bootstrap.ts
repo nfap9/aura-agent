@@ -1,12 +1,12 @@
 import "dotenv/config";
-import Chat from "./orchestration/chat.ts";
+import { Agent, ChatPresets, SYSTEM_PROMPT } from "./agent/index.ts";
 import { createProvider } from "./model/index.ts";
 import { createDefaultRegistry } from "./capabilities/tools/index.ts";
 import { ConsoleIO } from "./interfaces/cli/io.ts";
-import { ChatPresets } from "./orchestration/config.ts";
+
 import { MemoryManager, FileMemoryStorage } from "./capabilities/memory/index.ts";
 import { runChatLoop } from "./interfaces/cli/index.ts";
-import { SYSTEM_PROMPT } from "./orchestration/prompts.ts";
+
 import { SkillRegistry } from "./capabilities/skills/index.ts";
 
 const API_FORMAT = process.env.API_FORMAT || "openai";
@@ -74,9 +74,9 @@ export async function bootstrap() {
 
   // 初始化模型
   const provider = createProvider(API_FORMAT, API_KEY, BASE_URL);
-  const chat = new Chat({
+  const agent = new Agent({
     provider,
-    modelName: MODEL_NAME,
+    model: MODEL_NAME,
     systemPrompt: SYSTEM_PROMPT,
     tools: registry,
     memory: memoryManager,
@@ -87,6 +87,6 @@ export async function bootstrap() {
   io.divider("─", 48);
 
   // 开始对话
-  await runChatLoop({ chat, io, preset: ChatPresets.balanced });
+  await runChatLoop({ chat: agent, io, preset: ChatPresets.balanced });
 }
 

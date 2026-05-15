@@ -1,9 +1,9 @@
 import type { IO } from "./io.ts";
-import type Chat from "../../orchestration/chat.ts";
-import type { ChatCompletionOptions, ChatEvents } from "../../domain/types.ts";
+import type { Agent } from "../../agent/index.ts";
+import type { ChatCompletionOptions, AgentEvents } from "../../domain/types.ts";
 
 export interface ChatLoopOptions {
-  chat: Chat;
+  chat: Agent;
   io: IO;
   preset?: ChatCompletionOptions;
 }
@@ -56,7 +56,7 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
     let aiPrefixShown = false;
     let toolCallPending = false;
 
-    const events: ChatEvents = {
+    const events: AgentEvents = {
       onSkillMatch: (skills) => {
         io.showSkills(skills);
       },
@@ -72,7 +72,7 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
       },
     };
 
-    for await (const chunk of chat.sendMessageStream(userInput, preset, events)) {
+    for await (const chunk of chat.chatStream(userInput, preset, events)) {
       if (isFirstChunk) {
         stopLoading();
         isFirstChunk = false;

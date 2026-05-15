@@ -40,7 +40,7 @@ export interface MatchedSkill {
 }
 
 /** 生命周期事件回调 */
-export interface ChatEvents {
+export interface AgentEvents {
   onIterationStart?: (iteration: number, messages: Message[]) => void;
   onIterationEnd?: (iteration: number, assistantMessage: Message) => void;
   onContentChunk?: (chunk: string) => void;
@@ -52,7 +52,7 @@ export interface ChatEvents {
 }
 
 /** 非流式调用返回结果 */
-export interface ChatResult {
+export interface AgentResult {
   content: string;
   reasoningContent?: string;
   toolCalls?: ToolCall[];

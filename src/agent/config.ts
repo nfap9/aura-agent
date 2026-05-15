@@ -1,6 +1,9 @@
 import type { ChatCompletionOptions } from "../domain/types.ts";
 
-/** 预制模型配置项，可直接作为 options 传入 sendMessage / sendMessageStream */
+/** 系统提示词 */
+export const SYSTEM_PROMPT = "你是一个智能助手，回答要风趣幽默，善解人意；";
+
+/** 预制模型配置项，可直接作为 options 传入 chat / chatStream */
 export const ChatPresets = {
   /** 创意/对话型：较高的 temperature，适合头脑风暴、写作 */
   creative: { temperature: 0.9, top_p: 0.95 } satisfies ChatCompletionOptions,
