@@ -71,10 +71,7 @@ export default class Chat {
       totalTokens -= this.estimateMessageTokens(removed);
       this.messages.splice(startIndex, 1);
     }
-
-    console.log(
-      `[trimHistory] ${this.messages.length} msgs, ~${totalTokens}/${this.maxContextTokens} tokens`
-    );
+    // trimHistory 静默执行，不输出任何信息
   }
 
   // ========== 核心对话逻辑 ==========
@@ -88,7 +85,6 @@ export default class Chat {
 
     while (continueLoop && iteration < MAX_ITERATIONS) {
       iteration++;
-      console.log(`\n----第${iteration}轮请求----`);
 
       const stream = this.provider.chatStream({
         model: this.modelName,
@@ -144,8 +140,6 @@ export default class Chat {
           } catch (err: any) {
             result = `工具执行错误: ${err.message}`;
           }
-
-          console.log(`\n工具[${name}]→ ${result}`);
 
           this.messages.push({
             role: "tool",
