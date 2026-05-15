@@ -1,9 +1,9 @@
 import { ToolRegistry } from "./registry.ts";
-import { weatherDefinition, getWeather } from "./weather.ts";
 import { calculatorDefinition, calculate } from "./calculator.ts";
 import { createMemoryTools } from "./memory.ts";
 import type { MemoryManager } from "../memory/manager.ts";
 import { systemTime, systemTimeDefinition } from "./systemTime.ts";
+import { bashDefinition, executeBash } from "./bash.ts";
 
 export type { ToolDefinition, ToolHandler } from "./types.ts";
 export { ToolRegistry } from "./registry.ts";
@@ -20,9 +20,9 @@ export function createDefaultRegistry(
   options: RegistryOptions = {},
 ): ToolRegistry {
   const registry = new ToolRegistry();
-  registry.register(weatherDefinition, (args) => getWeather(args));
   registry.register(calculatorDefinition, (args) => calculate(args));
   registry.register(systemTimeDefinition, () => systemTime());
+  registry.register(bashDefinition, (args) => executeBash(args));
 
   if (options.memoryManager) {
     const memoryTools = createMemoryTools(options.memoryManager);

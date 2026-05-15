@@ -48,7 +48,7 @@ export class SkillRegistry {
       // hidden skill 不参与自动匹配
       if (skill.metadata.hidden === true) continue;
 
-      const haystack = `${skill.name} ${skill.description}`.toLowerCase();
+      const haystack = `${skill.name} ${skill.description} ${skill.content}`.toLowerCase();
       let score = 0;
       for (const kw of keywords) {
         if (haystack.includes(kw)) score += 1;
