@@ -15,6 +15,7 @@ const BASE_URL = process.env.BASE_URL || "";
 const MODEL_NAME = process.env.MODEL_NAME || "";
 const MEMORY_PATH = process.env.MEMORY_PATH || "./data/memories.json";
 const SKILLS_PATH = process.env.SKILLS_PATH || "";
+const MCP_SERVERS_PATH = process.env.MCP_SERVERS_PATH || "";
 
 async function main() {
   const io = new ConsoleIO();
@@ -33,7 +34,24 @@ async function main() {
   const memoryCount = await memoryManager.getCount();
   io.info("长期记忆", `${memoryCount} 条`, "🧠");
 
-  const registry = createDefaultRegistry({ memoryManager });
+  // 加载 MCP 配置（如果存在）
+  let mcpConfig = undefined;
+  if (MCP_SERVERS_PATH) {
+    try {
+      const mcpData = await import(MCP_SERVERS_PATH, { with: { type: "json" } });
+      mcpConfig = mcpData.default || mcpData;
+    } catch {
+      try {
+        const { readFile } = await import("node:fs/promises");
+        const raw = await readFile(MCP_SERVERS_PATH, "utf-8");
+        mcpConfig = JSON.parse(raw);
+      } catch (err: any) {
+        console.warn(`[MCP] 加载配置文件失败: ${err.message}`);
+      }
+    }
+  }
+
+  const registry = await createDefaultRegistry({ memoryManager, mcpConfig });
   io.info(
     "工具",
     `${registry.count} 个 (${registry.listTools().join(", ")})`,
