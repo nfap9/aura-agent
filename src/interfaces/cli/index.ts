@@ -61,7 +61,12 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
         io.showSkills(skills);
       },
       onToolCallStart: (toolCall) => {
-        const args = JSON.parse(toolCall.function.arguments) as Record<string, any>;
+        let args: Record<string, any> = {};
+        try {
+          args = JSON.parse(toolCall.function.arguments) as Record<string, any>;
+        } catch {
+          args = { raw: toolCall.function.arguments };
+        }
         io.showToolCall(toolCall.function.name, args);
       },
       onToolCallEnd: (toolCall, result) => {
