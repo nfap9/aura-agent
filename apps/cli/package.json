@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
+    "dev": "npm run build -w @aura/core && tsx src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
