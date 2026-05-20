@@ -1,6 +1,7 @@
 import type { MemoryEntry, MemoryResult, MemoryStorage } from "./types.ts";
 import { retrieveMemories } from "./retriever.ts";
 import { InMemoryStorage } from "./store.ts";
+import type { MemorySource } from "../../agent/index.ts";
 
 function generateId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -21,7 +22,7 @@ export interface MemoryManagerOptions {
  *
  * 负责记忆的增删改查、检索、以及自动整理（consolidation）。
  */
-export class MemoryManager {
+export class MemoryManager implements MemorySource {
   private storage: MemoryStorage;
   private entries: MemoryEntry[] = [];
   private initialized = false;
