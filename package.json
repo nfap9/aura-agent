@@ -1,35 +1,35 @@
 {
   "name": "aura",
   "version": "1.0.0",
-  "description": "",
+  "description": "一个轻量、模块化、可扩展的 AI Agent 运行时框架",
   "license": "ISC",
   "author": "",
+  "private": true,
   "type": "module",
-  "main": "index.js",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:cli": "npm run dev -w @aura/cli",
+    "build:core": "npm run build -w @aura/core",
+    "build:cli": "npm run build -w @aura/cli",
+    "build": "npm run build -w @aura/core && npm run build -w @aura/cli",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint packages/**/*.ts apps/**/*.ts",
+    "lint:fix": "eslint packages/**/*.ts apps/**/*.ts --fix",
+    "format": "prettier --write \"packages/**/*.ts\" \"apps/**/*.ts\"",
+    "format:check": "prettier --check \"packages/**/*.ts\" \"apps/**/*.ts\"",
     "prepare": "husky"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "dotenv": "^17.4.2",
-    "expr-eval": "^2.0.2",
-    "openai": "^6.37.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
     "@eslint/js": "^10.0.1",
-    "@types/expr-eval": "^1.0.2",
-    "@types/node": "^25.7.0",
     "eslint": "^10.4.0",
     "husky": "^9.1.7",
     "prettier": "^3.8.3",
-    "ts-node": "^10.9.2",
+    "rimraf": "^6.1.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4"
   }

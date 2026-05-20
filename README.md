@@ -74,28 +74,49 @@ MEMORY_PATH=./data/memories.json
 ### 3. 启动对话
 
 ```bash
-npx ts-node index.ts
+npm run dev:cli
+# 或构建后运行
+npm run build
+node apps/cli/dist/index.js
 ```
 
 输入 `exit` 或按 `Ctrl+C` 退出。
 
 ---
 
-## 📁 项目结构
+## 📁 项目结构（Monorepo）
 
 ```
-├── src/
-│   ├── agent/           # Agent 核心：ReAct 循环、对话线程、配置
-│   ├── capabilities/    # 能力层：工具、记忆、技能
-│   │   ├── tools/       # 工具注册表 + 内置工具 + MCP 客户端
-│   │   ├── memory/      # 长期记忆管理（存储、检索、清理）
-│   │   └── skills/      # Skill 加载器与注册表
-│   ├── types/           # 类型定义
-│   ├── interfaces/      # 用户接口：CLI 交互循环
-│   └── llm/             # 大模型 Provider（OpenAI / Anthropic / Gemini）
+├── packages/
+│   └── core/            # @aura/core — Agent 引擎（可独立发布）
+│       ├── src/
+│       │   ├── agent/   # Agent 核心：ReAct 循环、对话线程、配置
+│       │   ├── llm/     # 大模型 Provider（OpenAI / Anthropic / Gemini）
+│       │   ├── capabilities/  # 能力层：工具、记忆、技能
+│       │   └── types/   # 类型定义
+│       └── package.json
+├── apps/
+│   └── cli/             # @aura/cli — 命令行交互界面
+│       ├── src/
+│       │   ├── interfaces/cli/  # CLI 交互循环
+│       │   └── bootstrap.ts
+│       └── package.json
 ├── data/                # 默认记忆存储目录
-├── index.ts             # 程序入口
-└── tsconfig.json        # TypeScript 配置
+├── package.json         # Workspace 根配置
+└── tsconfig.json        # 共享 TypeScript 配置
+```
+
+### 添加新产品
+
+```bash
+# 创建 API 服务
+cd apps
+mkdir api
+cd api
+npm init -y
+# package.json 中添加 "@aura/core": "*" 依赖
+
+# 创建桌面端 / Web 端同理
 ```
 
 ---

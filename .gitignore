@@ -2,3 +2,6 @@
 .env
 /data
 /.skills
+/dist
+packages/*/dist
+apps/*/dist

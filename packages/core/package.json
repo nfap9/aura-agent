@@ -1,0 +1,34 @@
+{
+  "name": "@aura/core",
+  "version": "1.0.0",
+  "description": "Aura Agent 核心引擎",
+  "license": "ISC",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "expr-eval": "^2.0.2",
+    "openai": "^6.37.0"
+  },
+  "devDependencies": {
+    "@types/expr-eval": "^1.0.2",
+    "@types/node": "^25.7.0",
+    "typescript": "^6.0.3"
+  }
+}
