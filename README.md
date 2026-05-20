@@ -90,7 +90,7 @@ npx ts-node index.ts
 │   │   ├── tools/       # 工具注册表 + 内置工具 + MCP 客户端
 │   │   ├── memory/      # 长期记忆管理（存储、检索、清理）
 │   │   └── skills/      # Skill 加载器与注册表
-│   ├── domain/          # 领域类型定义
+│   ├── types/           # 类型定义
 │   ├── interfaces/      # 用户接口：CLI 交互循环
 │   └── model/           # 模型 Provider（OpenAI / Anthropic / Gemini）
 ├── data/                # 默认记忆存储目录
