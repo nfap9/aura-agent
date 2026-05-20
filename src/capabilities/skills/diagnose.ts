@@ -1,5 +1,5 @@
 import type { SkillRegistry } from "./registry.ts";
-import type { Message } from "../../domain/types.ts";
+import type { Message } from "../../types/types.ts";
 
 export interface DiagnoseResult {
   loaded: boolean;

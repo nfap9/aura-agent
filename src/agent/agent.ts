@@ -5,7 +5,7 @@ import type {
   ChatCompletionOptions,
   AgentEvents,
   AgentResult,
-} from "../domain/types.ts";
+} from "../types/types.ts";
 import type { Provider, StreamChunk } from "../model/index.ts";
 import { ToolRegistry } from "../capabilities/tools/registry.ts";
 import type { MemoryContext } from "./context/memory.ts";

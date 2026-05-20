@@ -1,4 +1,4 @@
-import type { ChatCompletionOptions } from "../domain/types.ts";
+import type { ChatCompletionOptions } from "../types/types.ts";
 
 /** 系统提示词 */
 export const SYSTEM_PROMPT = "你是一个智能助手，回答要风趣幽默，善解人意；";

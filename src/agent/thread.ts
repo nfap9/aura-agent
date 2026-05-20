@@ -1,4 +1,4 @@
-import type { Message, Tokenizer } from "../domain/types.ts";
+import type { Message, Tokenizer } from "../types/types.ts";
 
 const DEFAULT_MAX_CONTEXT_TOKENS = 128 * 1024;
 

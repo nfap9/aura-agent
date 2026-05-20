@@ -1,6 +1,6 @@
 import type { IO } from "./io.ts";
 import type { Agent } from "../../agent/index.ts";
-import type { ChatCompletionOptions, AgentEvents } from "../../domain/types.ts";
+import type { ChatCompletionOptions, AgentEvents } from "../../types/types.ts";
 
 export interface ChatLoopOptions {
   chat: Agent;
