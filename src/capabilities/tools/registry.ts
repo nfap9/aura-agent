@@ -1,4 +1,5 @@
 import type { ToolDefinition, ToolHandler } from "./types.ts";
+import type { ChatCompletionTool } from "../../types/types.ts";
 
 interface Tool {
   definition: ToolDefinition;
@@ -21,7 +22,7 @@ export class ToolRegistry {
   /**
    * 获取 OpenAI 格式的 tools schema 数组
    */
-  getOpenAISchemas(): any[] {
+  getOpenAISchemas(): ChatCompletionTool[] {
     return Array.from(this.tools.values()).map((t) => ({
       type: "function" as const,
       function: {

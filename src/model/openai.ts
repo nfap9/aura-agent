@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { Provider, StreamChunk } from "./base.ts";
-import type { Message, ChatCompletionOptions } from "../types/types.ts";
+import type { Message, ChatCompletionOptions, ChatCompletionTool } from "../types/types.ts";
 
 export class OpenAIProvider implements Provider {
   private client: OpenAI;
@@ -12,12 +12,12 @@ export class OpenAIProvider implements Provider {
   async *chatStream(params: {
     model: string;
     messages: Message[];
-    tools: any[];
+    tools: ChatCompletionTool[];
     options?: ChatCompletionOptions;
   }): AsyncGenerator<StreamChunk> {
     const requestOptions: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
       model: params.model,
-      messages: params.messages as any,
+      messages: params.messages as OpenAI.Chat.ChatCompletionMessageParam[],
       tools: params.tools,
       tool_choice: params.options?.tool_choice ?? "auto",
       stream: true,
@@ -40,7 +40,7 @@ export class OpenAIProvider implements Provider {
       requestOptions.response_format = params.options.response_format;
     }
     if (params.options?.reasoning_effort !== undefined) {
-      (requestOptions as any).reasoning_effort = params.options.reasoning_effort;
+      requestOptions.reasoning_effort = params.options.reasoning_effort;
     }
 
     // 透传其他 provider 特有参数（覆盖已有字段时以额外参数为准）
@@ -54,7 +54,7 @@ export class OpenAIProvider implements Provider {
         key !== "response_format" &&
         key !== "reasoning_effort"
       ) {
-        (requestOptions as any)[key] = value;
+        (requestOptions as unknown as Record<string, unknown>)[key] = value;
       }
     }
 

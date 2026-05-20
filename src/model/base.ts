@@ -1,4 +1,4 @@
-import type { Message, ChatCompletionOptions } from "../types/types.ts";
+import type { Message, ChatCompletionOptions, ChatCompletionTool } from "../types/types.ts";
 
 export interface StreamChunk {
   type: "content" | "reasoning" | "tool_call";
@@ -15,7 +15,7 @@ export interface Provider {
   chatStream(params: {
     model: string;
     messages: Message[];
-    tools: any[];
+    tools: ChatCompletionTool[];
     options?: ChatCompletionOptions;
   }): AsyncGenerator<StreamChunk>;
 }

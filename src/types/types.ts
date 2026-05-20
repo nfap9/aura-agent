@@ -40,6 +40,15 @@ export interface MatchedSkill {
 }
 
 /** 生命周期事件回调 */
+export interface ChatCompletionTool {
+  type: "function";
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+}
+
 export interface AgentEvents {
   onIterationStart?: (iteration: number, messages: Message[]) => void;
   onIterationEnd?: (iteration: number, assistantMessage: Message) => void;
