@@ -13,8 +13,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.4.2",
     "expr-eval": "^2.0.2",
-    "openai": "^6.37.0",
-    "zod": "^4.4.3"
+    "openai": "^6.37.0"
   },
   "devDependencies": {
     "@types/expr-eval": "^1.0.2",
