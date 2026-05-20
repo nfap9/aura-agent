@@ -27,6 +27,29 @@ async function main() {
   io.output("  \x1b[1m\x1b[96m🚀 启动 AI 助手\x1b[0m");
   io.divider("─", 48);
 
+  // 检查必需配置
+  const missing: string[] = [];
+  if (!API_KEY) missing.push("API_KEY");
+  if (!BASE_URL) missing.push("BASE_URL");
+  if (!MODEL_NAME) missing.push("MODEL_NAME");
+
+  if (missing.length > 0) {
+    io.output(`\x1b[93m⚠️ 缺少必需配置项: ${missing.join(", ")}\x1b[0m`);
+    io.output("");
+    io.output("请复制 .env.example 为 .env 并填写以下信息：");
+    io.output("");
+    io.output("  \x1b[90mcp .env.example .env\x1b[0m");
+    io.output("");
+    io.output("然后在 .env 中设置：");
+    io.output("");
+    io.output("  \x1b[1mAPI_KEY\x1b[0m=你的 API 密钥");
+    io.output("  \x1b[1mBASE_URL\x1b[0m=https://api.openai.com/v1");
+    io.output("  \x1b[1mMODEL_NAME\x1b[0m=gpt-4o");
+    io.output("");
+    io.close();
+    process.exit(1);
+  }
+
   // 初始化长期记忆
   const memoryStorage = new FileMemoryStorage(MEMORY_PATH);
   const memoryManager = new MemoryManager({
@@ -85,4 +108,7 @@ async function main() {
   await runChatLoop({ chat: agent, io, preset: ChatPresets.balanced });
 }
 
-main();
+main().catch((err) => {
+  console.error("\x1b[31m❌ 程序发生错误:\x1b[0m", err instanceof Error ? err.message : String(err));
+  process.exit(1);
+});
