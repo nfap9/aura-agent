@@ -1,12 +1,13 @@
 import type { ToolDefinition, ToolHandler } from "./types.ts";
 import type { ChatCompletionTool } from "../../types/types.ts";
+import type { ToolSource } from "../../agent/index.ts";
 
 interface Tool {
   definition: ToolDefinition;
   handler: ToolHandler;
 }
 
-export class ToolRegistry {
+export class ToolRegistry implements ToolSource {
   private tools = new Map<string, Tool>();
 
   /**
@@ -22,7 +23,7 @@ export class ToolRegistry {
   /**
    * 获取 OpenAI 格式的 tools schema 数组
    */
-  getOpenAISchemas(): ChatCompletionTool[] {
+  getToolSchemas(): ChatCompletionTool[] {
     return Array.from(this.tools.values()).map((t) => ({
       type: "function" as const,
       function: {

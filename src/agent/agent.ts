@@ -7,10 +7,10 @@ import type {
   AgentResult,
 } from "../types/types.ts";
 import type { Provider, StreamChunk } from "../llm/index.ts";
-import { ToolRegistry } from "../capabilities/tools/registry.ts";
-import type { MemoryContext } from "./ports/memory.ts";
-import type { SkillContext } from "./ports/skill.ts";
+import type { MemorySource } from "./ports/memory.ts";
+import type { SkillSource } from "./ports/skill.ts";
 import { Thread } from "./thread.ts";
+import { NullToolSource, type ToolSource } from "./ports/tool.ts";
 
 const MAX_ITERATIONS = 10;
 
@@ -31,17 +31,17 @@ export interface AgentConfig {
   /** 系统提示词 */
   systemPrompt?: string | undefined;
   /** 可用工具集 */
-  tools?: ToolRegistry | undefined;
+  tools?: ToolSource | undefined;
   /** 最大上下文 Token 数 */
   maxContextTokens?: number | undefined;
   /** 自定义分词器 */
   tokenizer?: Tokenizer | undefined;
   /** 记忆上下文源 */
-  memory?: MemoryContext | undefined;
+  memory?: MemorySource | undefined;
   /** 是否自动将对话总结为记忆 */
   autoMemory?: boolean | undefined;
   /** 技能上下文源 */
-  skills?: SkillContext | undefined;
+  skills?: SkillSource | undefined;
 }
 
 /**
@@ -56,16 +56,16 @@ export class Agent {
   private thread: Thread;
   private provider: Provider;
   private model: string;
-  private tools: ToolRegistry;
-  private memory?: MemoryContext | undefined;
+  private tools: ToolSource;
+  private memory?: MemorySource | undefined;
   private autoMemory: boolean;
-  private skills?: SkillContext | undefined;
+  private skills?: SkillSource | undefined;
   private tokenizer?: Tokenizer | undefined;
 
   constructor(config: AgentConfig) {
     this.provider = config.provider;
     this.model = config.model;
-    this.tools = config.tools ?? new ToolRegistry();
+    this.tools = config.tools || new NullToolSource();
     this.memory = config.memory;
     this.autoMemory = config.autoMemory ?? false;
     this.skills = config.skills;
@@ -180,7 +180,7 @@ export class Agent {
       const stream = this.provider.chatStream({
         model: this.model,
         messages: apiMessages,
-        tools: this.tools.getOpenAISchemas(),
+        tools: this.tools.getToolSchemas(),
         ...(options ? { options } : {}),
       });
 

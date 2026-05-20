@@ -10,6 +10,6 @@ export interface SkillInfo {
 /**
  * 技能上下文源：根据用户查询匹配相关技能
  */
-export interface SkillContext {
+export interface SkillSource {
   match(query: string): Promise<SkillInfo[]> | SkillInfo[];
 }
