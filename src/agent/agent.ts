@@ -228,11 +228,11 @@ export class Agent {
       } else {
         for (const toolCall of toolCalls) {
           const { name, arguments: args } = toolCall.function;
-          const parseArgs = JSON.parse(args);
           let result: string;
 
           events?.onToolCallStart?.(toolCall);
           try {
+            const parseArgs = JSON.parse(args);
             result = await this.tools.execute(name, parseArgs);
             events?.onToolCallEnd?.(toolCall, result);
           } catch (err: any) {
