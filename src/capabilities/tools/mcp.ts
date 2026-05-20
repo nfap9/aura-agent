@@ -56,10 +56,7 @@ export class MCPClientManager {
    * 连接单个 MCP 服务器
    */
   private async connectServer(config: MCPServerConfig): Promise<void> {
-    const client = new Client(
-      { name: "agent-mcp-client", version: "1.0.0" },
-      { capabilities: {} },
-    );
+    const client = new Client({ name: "agent-mcp-client", version: "1.0.0" }, { capabilities: {} });
 
     let transport: Transport;
 
@@ -67,7 +64,12 @@ export class MCPClientManager {
       if (!config.command) {
         throw new Error(`MCP server "${config.name}" 缺少 command 配置`);
       }
-      const stdioParams: { command: string; args?: string[]; env?: Record<string, string>; cwd?: string } = {
+      const stdioParams: {
+        command: string;
+        args?: string[];
+        env?: Record<string, string>;
+        cwd?: string;
+      } = {
         command: config.command,
       };
       if (config.args !== undefined) stdioParams.args = config.args;
@@ -111,9 +113,7 @@ export class MCPClientManager {
       this._toolServerMap.set(uniqueName, config.name);
     }
 
-    console.log(
-      `[MCP] 已连接 "${config.name}"，发现 ${tools.length} 个工具`,
-    );
+    console.log(`[MCP] 已连接 "${config.name}"，发现 ${tools.length} 个工具`);
   }
 
   /**
@@ -158,10 +158,7 @@ export class MCPClientManager {
   /**
    * 执行指定 MCP 工具
    */
-  private async executeTool(
-    uniqueName: string,
-    args: Record<string, any>,
-  ): Promise<string> {
+  private async executeTool(uniqueName: string, args: Record<string, any>): Promise<string> {
     const serverName = this._toolServerMap.get(uniqueName);
     if (!serverName) {
       throw new Error(`未知的 MCP 工具: ${uniqueName}`);

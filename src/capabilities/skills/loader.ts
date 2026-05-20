@@ -71,9 +71,7 @@ function expandHome(filePath: string): string {
 /**
  * 扫描目录，加载所有子目录下的 SKILL.md
  */
-export async function loadSkillsFromDirectory(
-  dirPath: string,
-): Promise<Skill[]> {
+export async function loadSkillsFromDirectory(dirPath: string): Promise<Skill[]> {
   const skills: Skill[] = [];
   const resolvedPath = expandHome(dirPath);
 

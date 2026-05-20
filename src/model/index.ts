@@ -5,11 +5,7 @@ import type { Provider } from "./base.ts";
 
 export type { Provider, StreamChunk } from "./base.ts";
 
-export function createProvider(
-  format: string,
-  apiKey: string,
-  baseURL: string,
-): Provider {
+export function createProvider(format: string, apiKey: string, baseURL: string): Provider {
   switch (format) {
     case "openai":
       return new OpenAIProvider(apiKey, baseURL);
@@ -19,8 +15,7 @@ export function createProvider(
       return new GeminiProvider(apiKey, baseURL);
     default:
       throw new Error(
-        `Unsupported API format: "${format}". ` +
-          `Expected "openai", "anthropic", or "gemini".`
+        `Unsupported API format: "${format}". ` + `Expected "openai", "anthropic", or "gemini".`
       );
   }
 }

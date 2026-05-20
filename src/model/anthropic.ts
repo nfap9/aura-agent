@@ -5,6 +5,7 @@ export class AnthropicProvider implements Provider {
     // TODO: initialize Anthropic SDK client
   }
 
+  // eslint-disable-next-line require-yield
   async *chatStream(): AsyncGenerator<StreamChunk> {
     throw new Error("Anthropic provider is not implemented yet");
   }

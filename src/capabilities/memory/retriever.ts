@@ -34,10 +34,7 @@ function termFrequency(tokens: string[]): Map<string, number> {
 /**
  * 计算余弦相似度
  */
-function cosineSimilarity(
-  vecA: Map<string, number>,
-  vecB: Map<string, number>,
-): number {
+function cosineSimilarity(vecA: Map<string, number>, vecB: Map<string, number>): number {
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
@@ -61,9 +58,7 @@ function cosineSimilarity(
 /**
  * 计算 IDF（逆文档频率）
  */
-function computeIdf(
-  documents: Map<string, number>[],
-): Map<string, number> {
+function computeIdf(documents: Map<string, number>[]): Map<string, number> {
   const idf = new Map<string, number>();
   const N = documents.length;
 
@@ -85,10 +80,7 @@ function computeIdf(
 /**
  * 将词频向量应用 IDF 权重
  */
-function applyIdf(
-  tf: Map<string, number>,
-  idf: Map<string, number>,
-): Map<string, number> {
+function applyIdf(tf: Map<string, number>, idf: Map<string, number>): Map<string, number> {
   const weighted = new Map<string, number>();
   for (const [term, freq] of tf) {
     const weight = idf.get(term) || 1;
@@ -115,7 +107,7 @@ export function retrieveMemories(
   query: string,
   entries: MemoryEntry[],
   limit: number = 5,
-  minScore: number = 0.05,
+  minScore: number = 0.05
 ): MemoryResult[] {
   if (entries.length === 0) return [];
 

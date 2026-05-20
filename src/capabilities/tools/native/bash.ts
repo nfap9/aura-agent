@@ -24,9 +24,7 @@ export const bashDefinition: ToolDefinition = {
   },
 };
 
-export async function executeBash(
-  args: Record<string, any>,
-): Promise<string> {
+export async function executeBash(args: Record<string, any>): Promise<string> {
   const { command, timeout = 60000 } = args;
 
   try {

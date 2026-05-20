@@ -52,11 +52,7 @@ export async function bootstrap() {
   }
 
   const registry = await createDefaultRegistry({ memoryManager, mcpConfig });
-  io.info(
-    "工具",
-    `${registry.count} 个 (${registry.listTools().join(", ")})`,
-    "🔧",
-  );
+  io.info("工具", `${registry.count} 个 (${registry.listTools().join(", ")})`, "🔧");
 
   // 初始化 Skill
   let skillRegistry: SkillRegistry | undefined;
@@ -65,11 +61,7 @@ export async function bootstrap() {
     skillRegistry = await SkillRegistry.fromDirectory(SKILLS_PATH, {
       maxActiveSkills: 3,
     });
-    io.info(
-      "Skills",
-      `${skillRegistry.count} 个 (${skillRegistry.listSkills().join(", ")})`,
-      "🎯",
-    );
+    io.info("Skills", `${skillRegistry.count} 个 (${skillRegistry.listSkills().join(", ")})`, "🎯");
   }
 
   // 初始化模型
@@ -89,4 +81,3 @@ export async function bootstrap() {
   // 开始对话
   await runChatLoop({ chat: agent, io, preset: ChatPresets.balanced });
 }
-

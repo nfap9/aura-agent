@@ -85,7 +85,7 @@ export function createMemoryTools(manager: MemoryManager) {
     const entry = await manager.saveMemory(
       args.content,
       args.category ?? "fact",
-      args.importance ?? 5,
+      args.importance ?? 5
     );
     return `已保存记忆 [${entry.id}]（${entry.category}，重要度 ${entry.importance}）`;
   }
@@ -98,7 +98,7 @@ export function createMemoryTools(manager: MemoryManager) {
     return results
       .map(
         (r) =>
-          `• [${r.entry.id}] (${r.entry.category}, 重要度 ${r.entry.importance}) ${r.entry.content}`,
+          `• [${r.entry.id}] (${r.entry.category}, 重要度 ${r.entry.importance}) ${r.entry.content}`
       )
       .join("\n");
   }
@@ -114,10 +114,7 @@ export function createMemoryTools(manager: MemoryManager) {
       return "当前没有保存任何记忆。";
     }
     return entries
-      .map(
-        (e) =>
-          `• [${e.id}] (${e.category}, 重要度 ${e.importance}) ${e.content}`,
-      )
+      .map((e) => `• [${e.id}] (${e.category}, 重要度 ${e.importance}) ${e.content}`)
       .join("\n");
   }
 

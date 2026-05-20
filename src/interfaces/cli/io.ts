@@ -109,7 +109,7 @@ export class ConsoleIO implements IO {
 
   info(label: string, value: string, icon: string = "◆"): void {
     this.output(
-      `${C.dim}${icon}${C.reset} ${C.bold}${label}:${C.reset} ${C.brightCyan}${value}${C.reset}`,
+      `${C.dim}${icon}${C.reset} ${C.bold}${label}:${C.reset} ${C.brightCyan}${value}${C.reset}`
     );
   }
 
@@ -122,16 +122,12 @@ export class ConsoleIO implements IO {
   }
 
   showToolError(name: string, _error: string): void {
-    this.output(
-      `${C.red}❌ 工具错误:${C.reset} ${C.brightYellow}${name}${C.reset}`,
-    );
+    this.output(`${C.red}❌ 工具错误:${C.reset} ${C.brightYellow}${name}${C.reset}`);
   }
 
   showSkills(skills: { name: string; description: string }[]): void {
     for (const skill of skills) {
-      this.output(
-        `${C.magenta}🎯 使用技能:${C.reset} ${C.brightMagenta}${skill.name}${C.reset}`,
-      );
+      this.output(`${C.magenta}🎯 使用技能:${C.reset} ${C.brightMagenta}${skill.name}${C.reset}`);
     }
   }
 

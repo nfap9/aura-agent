@@ -5,6 +5,7 @@ export class GeminiProvider implements Provider {
     // TODO: initialize Gemini SDK client
   }
 
+  // eslint-disable-next-line require-yield
   async *chatStream(): AsyncGenerator<StreamChunk> {
     throw new Error("Gemini provider is not implemented yet");
   }

@@ -20,9 +20,7 @@ export interface RegistryOptions {
 /**
  * 创建包含默认工具的注册表
  */
-export async function createDefaultRegistry(
-  options: RegistryOptions = {},
-): Promise<ToolRegistry> {
+export async function createDefaultRegistry(options: RegistryOptions = {}): Promise<ToolRegistry> {
   const registry = new ToolRegistry();
   registry.register(calculatorDefinition, (args) => calculate(args));
   registry.register(systemTimeDefinition, () => systemTime());
@@ -31,8 +29,7 @@ export async function createDefaultRegistry(
   if (options.memoryManager) {
     const memoryTools = createMemoryTools(options.memoryManager);
     for (const def of memoryTools.definitions) {
-      const handler =
-        memoryTools.handlers[def.name as keyof typeof memoryTools.handlers];
+      const handler = memoryTools.handlers[def.name as keyof typeof memoryTools.handlers];
       registry.register(def, (args) => handler(args));
     }
   }

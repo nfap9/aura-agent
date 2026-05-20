@@ -30,6 +30,7 @@ export interface ChatCompletionOptions {
   response_format?: { type: "text" | "json_object" };
   reasoning_effort?: "low" | "medium" | "high";
   /** 允许透传 provider 特有参数 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 

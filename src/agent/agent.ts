@@ -87,7 +87,7 @@ export class Agent {
   async *chatStream(
     input: string | Message | Message[],
     options?: ChatCompletionOptions,
-    events?: AgentEvents,
+    events?: AgentEvents
   ): AsyncGenerator<StreamChunk> {
     const inputMessages = normalizeInput(input);
     yield* this.runLoop(inputMessages, options, events);
@@ -97,12 +97,11 @@ export class Agent {
   async chat(
     input: string | Message | Message[],
     options?: ChatCompletionOptions,
-    events?: AgentEvents,
+    events?: AgentEvents
   ): Promise<AgentResult> {
     const inputMessages = normalizeInput(input);
     let content = "";
     let reasoningContent = "";
-    let toolCalls: ToolCall[] | undefined;
 
     for await (const chunk of this.runLoop(inputMessages, options, events)) {
       if (chunk.type === "content") {
@@ -116,7 +115,7 @@ export class Agent {
       .getMessages()
       .reverse()
       .find((m) => m.role === "assistant");
-    toolCalls = lastAssistant?.tool_calls;
+    const toolCalls = lastAssistant?.tool_calls;
 
     return {
       content,
@@ -131,7 +130,7 @@ export class Agent {
   private async *runLoop(
     inputMessages: Message[],
     options?: ChatCompletionOptions,
-    events?: AgentEvents,
+    events?: AgentEvents
   ): AsyncGenerator<StreamChunk> {
     // 注入记忆上下文
     if (this.memory && inputMessages.length > 0) {
@@ -149,7 +148,9 @@ export class Agent {
             inputMessages[firstUserIdx] = {
               role: target.role,
               content: `${memoryContext}\n---\n${original}`,
-              ...(target.reasoning_content !== undefined ? { reasoning_content: target.reasoning_content } : {}),
+              ...(target.reasoning_content !== undefined
+                ? { reasoning_content: target.reasoning_content }
+                : {}),
               ...(target.tool_calls !== undefined ? { tool_calls: target.tool_calls } : {}),
               ...(target.tool_call_id !== undefined ? { tool_call_id: target.tool_call_id } : {}),
             };
@@ -235,17 +236,19 @@ export class Agent {
             const parseArgs = JSON.parse(args);
             result = await this.tools.execute(name, parseArgs);
             events?.onToolCallEnd?.(toolCall, result);
-          } catch (err: any) {
+          } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
             events?.onToolCallError?.(toolCall, error);
             result = `工具执行错误: ${error.message}`;
           }
 
-          this.thread.addMessages([{
-            role: "tool",
-            content: result,
-            tool_call_id: toolCall.id,
-          }]);
+          this.thread.addMessages([
+            {
+              role: "tool",
+              content: result,
+              tool_call_id: toolCall.id,
+            },
+          ]);
         }
       }
 
@@ -261,7 +264,7 @@ export class Agent {
 
   private async buildMessagesWithSkills(
     userQuery: string,
-    events?: AgentEvents,
+    events?: AgentEvents
   ): Promise<Message[]> {
     if (!this.skills || !userQuery) {
       return this.thread.getMessages();
@@ -272,9 +275,7 @@ export class Agent {
       return this.thread.getMessages();
     }
 
-    events?.onSkillMatch?.(
-      matched.map((s) => ({ name: s.name, description: s.description })),
-    );
+    events?.onSkillMatch?.(matched.map((s) => ({ name: s.name, description: s.description })));
 
     const skillContent = matched
       .map((s) => `## ${s.name}\n${s.description}\n\n${s.content}`)
@@ -288,11 +289,7 @@ export class Agent {
     const messages = this.thread.getMessages();
     const systemIdx = messages.findIndex((m) => m.role === "system");
     if (systemIdx !== -1) {
-      return [
-        ...messages.slice(0, systemIdx + 1),
-        skillMsg,
-        ...messages.slice(systemIdx + 1),
-      ];
+      return [...messages.slice(0, systemIdx + 1), skillMsg, ...messages.slice(systemIdx + 1)];
     }
     return [skillMsg, ...messages];
   }

@@ -94,7 +94,7 @@ export class Thread {
     }
     if (totalTokens <= this.maxContextTokens) return;
 
-    let startIndex = this.messages[0]?.role === "system" ? 1 : 0;
+    const startIndex = this.messages[0]?.role === "system" ? 1 : 0;
     const minKeepCount = 2;
 
     while (

@@ -23,18 +23,14 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<void> {
   const { chat, io, preset } = options;
 
   io.output("");
+  io.output(`${C.dim}╭${"─".repeat(46)}╮${C.reset}`);
   io.output(
-    `${C.dim}╭${"─".repeat(46)}╮${C.reset}`,
+    `${C.dim}│${C.reset}  ${C.brightCyan}${C.bold}🤖 AI 助手${C.reset}${" ".repeat(36)}${C.dim}│${C.reset}`
   );
   io.output(
-    `${C.dim}│${C.reset}  ${C.brightCyan}${C.bold}🤖 AI 助手${C.reset}${" ".repeat(36)}${C.dim}│${C.reset}`,
+    `${C.dim}│${C.reset}  ${C.gray}输入 'exit' 或按 Ctrl+C 退出${C.reset}${" ".repeat(18)}${C.dim}│${C.reset}`
   );
-  io.output(
-    `${C.dim}│${C.reset}  ${C.gray}输入 'exit' 或按 Ctrl+C 退出${C.reset}${" ".repeat(18)}${C.dim}│${C.reset}`,
-  );
-  io.output(
-    `${C.dim}╰${"─".repeat(46)}╯${C.reset}`,
-  );
+  io.output(`${C.dim}╰${"─".repeat(46)}╯${C.reset}`);
   io.output("");
 
   while (true) {

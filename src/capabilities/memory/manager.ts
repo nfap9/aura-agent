@@ -1,8 +1,4 @@
-import type {
-  MemoryEntry,
-  MemoryResult,
-  MemoryStorage,
-} from "./types.ts";
+import type { MemoryEntry, MemoryResult, MemoryStorage } from "./types.ts";
 import { retrieveMemories } from "./retriever.ts";
 import { InMemoryStorage } from "./store.ts";
 
@@ -57,7 +53,7 @@ export class MemoryManager {
     content: string,
     category: string = "fact",
     importance: number = 5,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<MemoryEntry> {
     await this.init();
 
@@ -105,16 +101,13 @@ export class MemoryManager {
   /**
    * 根据查询检索相关记忆
    */
-  async searchMemories(
-    query: string,
-    limit?: number,
-  ): Promise<MemoryResult[]> {
+  async searchMemories(query: string, limit?: number): Promise<MemoryResult[]> {
     await this.init();
     const results = retrieveMemories(
       query,
       this.entries,
       limit ?? this.defaultLimit,
-      this.minScore,
+      this.minScore
     );
 
     // 更新访问计数
@@ -133,17 +126,12 @@ export class MemoryManager {
   /**
    * 根据上下文获取相关记忆，格式化为字符串供注入 prompt
    */
-  async getRelevantContext(
-    context: string,
-    limit?: number,
-  ): Promise<string> {
+  async getRelevantContext(context: string, limit?: number): Promise<string> {
     const results = await this.searchMemories(context, limit);
     if (results.length === 0) return "";
 
     const lines = results.map((r, i) => {
-      const prefix = r.entry.category
-        ? `[${r.entry.category}] `
-        : "";
+      const prefix = r.entry.category ? `[${r.entry.category}] ` : "";
       return `${i + 1}. ${prefix}${r.entry.content}`;
     });
 
@@ -189,8 +177,7 @@ export class MemoryManager {
     // 计算每条记忆的综合评分
     const now = Date.now();
     const scored = this.entries.map((entry) => {
-      const daysOld =
-        (now - new Date(entry.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      const daysOld = (now - new Date(entry.createdAt).getTime()) / (1000 * 60 * 60 * 24);
       const recencyScore = Math.exp(-daysOld / 30);
       const importanceScore = entry.importance / 10;
       const accessScore = Math.log1p(entry.accessCount) / Math.log1p(100);

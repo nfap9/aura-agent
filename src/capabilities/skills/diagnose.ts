@@ -12,7 +12,7 @@ export interface DiagnoseResult {
 export function diagnoseSkills(
   registry: SkillRegistry | undefined,
   testQueries: string[],
-  baseMessages: Message[],
+  baseMessages: Message[]
 ): DiagnoseResult {
   const result: DiagnoseResult = {
     loaded: false,
