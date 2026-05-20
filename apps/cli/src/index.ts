@@ -47,7 +47,7 @@ async function main() {
     io.output("  \x1b[1mMODEL_NAME\x1b[0m=gpt-4o");
     io.output("");
     io.close();
-    process.exit(1);
+    return;
   }
 
   // 初始化长期记忆
