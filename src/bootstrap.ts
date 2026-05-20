@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { Agent, ChatPresets, SYSTEM_PROMPT } from "./agent/index.ts";
-import { createProvider } from "./model/index.ts";
+import { createProvider } from "./llm/index.ts";
 import { createDefaultRegistry } from "./capabilities/tools/index.ts";
 import { ConsoleIO } from "./interfaces/cli/io.ts";
 

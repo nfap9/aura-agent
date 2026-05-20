@@ -6,10 +6,10 @@ import type {
   AgentEvents,
   AgentResult,
 } from "../types/types.ts";
-import type { Provider, StreamChunk } from "../model/index.ts";
+import type { Provider, StreamChunk } from "../llm/index.ts";
 import { ToolRegistry } from "../capabilities/tools/registry.ts";
-import type { MemoryContext } from "./context/memory.ts";
-import type { SkillContext } from "./context/skill.ts";
+import type { MemoryContext } from "./ports/memory.ts";
+import type { SkillContext } from "./ports/skill.ts";
 import { Thread } from "./thread.ts";
 
 const MAX_ITERATIONS = 10;
